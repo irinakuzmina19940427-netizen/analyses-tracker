@@ -1,5 +1,5 @@
-const CACHE = 'vmi-v1';
-const ASSETS = ['./index.html', './manifest.json'];
+const CACHE = 'vmi-v2';
+const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -14,16 +14,25 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for assets
-  if (e.request.url.includes('anthropic.com')) {
+  const url = e.request.url;
+
+  // Пропускаем API-запросы напрямую, без кэша
+  if (url.includes('anthropic.com') || url.includes('fonts.googleapis') || url.includes('fonts.gstatic')) {
     e.respondWith(fetch(e.request));
     return;
   }
+
+  // Для своих файлов — сначала кэш, потом сеть
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, clone));
-      return res;
-    }))
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => cached);
+    })
   );
 });
