@@ -1,0 +1,24 @@
+{
+  "name": "Трекер анализов ВМИ",
+  "short_name": "ВМИ анализы",
+  "description": "Чек-лист анализов для подготовки к ВМИ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0EDF8",
+  "theme_color": "#6C5EA8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

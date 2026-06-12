@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ВМИ анализы">
+<meta name="theme-color" content="#6C5EA8">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Трекер анализов — ВМИ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+
+:root{
+  --bg:#F0EDF8;
+  --card:#fff;
+  --accent:#6C5EA8;
+  --accent2:#9B8DC4;
+  --accent-light:#EDE9F7;
+  --ok:#2E9E6B;
+  --ok-bg:#E4F5EE;
+  --warn:#C97A00;
+  --warn-bg:#FEF3CD;
+  --danger:#C0392B;
+  --danger-bg:#FDECEA;
+  --empty:#9A92B0;
+  --empty-bg:#F0EDF8;
+  --text:#1A1730;
+  --muted:#7A6F9A;
+  --border:#DDD8EF;
+  --safe-top:env(safe-area-inset-top);
+  --safe-bot:env(safe-area-inset-bottom);
+}
+
+html,body{height:100%;overflow:hidden;}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  font-size:14px;
+}
+
+/* ─── NAV BAR ─── */
+.nav{
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:calc(var(--safe-top) + 10px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  position:sticky;top:0;z-index:100;
+}
+.nav-title{font-size:17px;font-weight:700;color:var(--accent);}
+.nav-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.nav-right{display:flex;gap:8px;}
+.icon-btn{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--accent-light);border:none;
+  font-size:16px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ─── TABS ─── */
+.tabs{
+  display:flex;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{
+  flex:0 0 auto;
+  padding:10px 16px;
+  font-size:13px;font-weight:500;
+  color:var(--muted);border:none;background:none;
+  cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;
+}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ─── SCROLL AREA ─── */
+.scroll{
+  flex:1;overflow-y:auto;
+  padding:14px 14px calc(var(--safe-bot) + 80px);
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ─── SUMMARY STRIP ─── */
+.summary{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:8px;margin-bottom:16px;
+}
+.sum-cell{
+  background:var(--card);border-radius:12px;
+  border:1px solid var(--border);
+  padding:10px 6px;text-align:center;
+}
+.sum-num{font-size:22px;font-weight:700;line-height:1;}
+.sum-lbl{font-size:10px;color:var(--muted);margin-top:3px;}
+.c-ok{color:var(--ok);}
+.c-warn{color:var(--warn);}
+.c-danger{color:var(--danger);}
+.c-empty{color:var(--empty);}
+
+/* progress bar */
+.prog-wrap{
+  background:var(--card);border-radius:12px;
+  border:1px solid var(--border);
+  padding:12px 14px;margin-bottom:14px;
+}
+.prog-row{display:flex;justify-content:space-between;margin-bottom:8px;}
+.prog-label{font-size:12px;font-weight:500;color:var(--muted);}
+.prog-count{font-size:13px;font-weight:700;color:var(--accent);}
+.prog-track{height:7px;background:var(--empty-bg);border-radius:99px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--ok));border-radius:99px;transition:width .5s ease;}
+
+/* ─── UPLOAD PANEL ─── */
+.upload-panel{
+  background:var(--card);border-radius:14px;
+  border:2px dashed var(--accent2);
+  padding:18px 14px;margin-bottom:14px;
+  text-align:center;
+}
+.upload-panel h3{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:4px;}
+.upload-panel p{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.4;}
+.upload-row{display:flex;gap:8px;justify-content:center;}
+.btn-primary{
+  background:var(--accent);color:#fff;
+  border:none;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:6px;
+}
+.btn-secondary{
+  background:var(--accent-light);color:var(--accent);
+  border:none;border-radius:10px;
+  padding:10px 18px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+  display:flex;align-items:center;gap:6px;
+}
+#fileInput{display:none;}
+
+/* AI result box */
+.ai-box{
+  background:var(--card);border-radius:14px;
+  border:1.5px solid var(--border);
+  padding:14px;margin-bottom:14px;
+  display:none;
+}
+.ai-box.show{display:block;}
+.ai-box-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.ai-box-icon{font-size:18px;}
+.ai-box-title{font-size:13px;font-weight:600;color:var(--accent);}
+.ai-box-file{font-size:11px;color:var(--muted);}
+.spinner-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);}
+.spinner{width:16px;height:16px;border:2px solid var(--accent-light);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;margin:2px;}
+.tag-ok{background:var(--ok-bg);color:var(--ok);}
+.tag-warn{background:var(--warn-bg);color:var(--warn);}
+.ai-section{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:10px 0 6px;}
+.ai-note{font-size:12px;color:var(--muted);font-style:italic;background:var(--empty-bg);padding:9px 11px;border-radius:9px;margin-top:10px;line-height:1.45;}
+.ai-missing{font-size:12px;color:var(--warn);background:var(--warn-bg);padding:9px 11px;border-radius:9px;margin-top:8px;line-height:1.5;}
+.btn-accept{
+  width:100%;margin-top:12px;
+  background:var(--ok);color:#fff;
+  border:none;border-radius:10px;
+  padding:11px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:'Inter',sans-serif;
+}
+
+/* ─── ITEM CARDS ─── */
+.sec-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1px;color:var(--muted);
+  margin:18px 0 8px 2px;
+}
+
+.item-card{
+  background:var(--card);border-radius:14px;
+  border:1.5px solid var(--border);
+  margin-bottom:6px;overflow:hidden;
+}
+
+.item-main{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:13px 13px 0;
+}
+
+.dot{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;flex-shrink:0;
+}
+.dot-ok{background:var(--ok-bg);color:var(--ok);}
+.dot-warn{background:var(--warn-bg);color:var(--warn);}
+.dot-danger{background:var(--danger-bg);color:var(--danger);}
+.dot-empty{background:var(--empty-bg);color:var(--empty);}
+
+.item-body{flex:1;min-width:0;}
+.item-name{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:2px;}
+.item-validity{font-size:11px;color:var(--muted);}
+.item-st{font-size:12px;font-weight:500;margin-top:2px;}
+.st-ok{color:var(--ok);}
+.st-warn{color:var(--warn);}
+.st-danger{color:var(--danger);}
+.st-empty{color:var(--empty);}
+
+.ai-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;font-weight:600;padding:2px 7px;
+  border-radius:99px;margin-left:5px;vertical-align:middle;
+}
+.chip-ok{background:var(--ok-bg);color:var(--ok);}
+.chip-warn{background:var(--warn-bg);color:var(--warn);}
+
+.item-note{
+  font-size:11px;color:var(--muted);font-style:italic;
+  padding:6px 13px 0 55px;line-height:1.4;
+}
+.item-issues{
+  margin:6px 13px 0 55px;
+  background:var(--warn-bg);border-radius:8px;
+  padding:7px 10px;
+}
+.item-issues li{
+  font-size:11px;color:var(--warn);
+  list-style:none;padding:1px 0;
+}
+.item-issues li::before{content:"⚠ ";}
+
+.item-date{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 13px 12px 55px;
+}
+.date-lbl{font-size:11px;color:var(--muted);}
+.date-inp{
+  font-family:'Inter',sans-serif;font-size:12px;color:var(--text);
+  border:1.5px solid var(--border);border-radius:8px;
+  padding:6px 9px;background:var(--bg);outline:none;
+  -webkit-appearance:none;flex:1;min-width:0;
+  min-height:34px;
+}
+.date-inp:focus{border-color:var(--accent);}
+.clr-btn{
+  font-size:11px;color:var(--muted);
+  background:none;border:none;cursor:pointer;
+  text-decoration:underline;font-family:'Inter',sans-serif;
+  white-space:nowrap;padding:4px 0;
+}
+
+/* ─── BOTTOM INSTALL BANNER (shows once) ─── */
+.install-banner{
+  position:fixed;bottom:calc(var(--safe-bot) + 8px);left:14px;right:14px;
+  background:var(--accent);color:#fff;
+  border-radius:14px;padding:14px 16px;
+  display:none;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.2);
+}
+.install-banner.show{display:flex;align-items:center;gap:12px;}
+.install-banner-text{flex:1;font-size:13px;line-height:1.4;}
+.install-banner-text b{display:block;font-size:14px;margin-bottom:2px;}
+.install-close{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<div class="nav">
+  <div>
+    <div class="nav-title">💊 ВМИ анализы</div>
+    <div class="nav-sub">Клиника Савельевской</div>
+  </div>
+  <div class="nav-right">
+    <button class="icon-btn" onclick="showTab('upload')" title="Загрузить">📎</button>
+    <button class="icon-btn" onclick="showTab('list')" title="Список">📋</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" data-tab="list" onclick="showTab('list')">Чек-лист</button>
+  <button class="tab" data-tab="upload" onclick="showTab('upload')">📎 Загрузить бланк</button>
+  <button class="tab" data-tab="done" onclick="showTab('done')">✓ Сданные</button>
+</div>
+
+<!-- Scroll area -->
+<div class="scroll" id="scrollArea">
+
+  <!-- TAB: LIST -->
+  <div id="tab-list">
+    <div class="prog-wrap">
+      <div class="prog-row">
+        <span class="prog-label">Готовность к ВМИ</span>
+        <span class="prog-count" id="progressLabel">0 / 0</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+    <div class="summary">
+      <div class="sum-cell"><div class="sum-num c-ok" id="cntOk">0</div><div class="sum-lbl">в норме</div></div>
+      <div class="sum-cell"><div class="sum-num c-warn" id="cntWarn">0</div><div class="sum-lbl">истекают</div></div>
+      <div class="sum-cell"><div class="sum-num c-danger" id="cntDanger">0</div><div class="sum-lbl">просрочены</div></div>
+      <div class="sum-cell"><div class="sum-num c-empty" id="cntEmpty">0</div><div class="sum-lbl">не сданы</div></div>
+    </div>
+    <div id="listItems"></div>
+  </div>
+
+  <!-- TAB: UPLOAD -->
+  <div id="tab-upload" style="display:none;">
+    <div class="upload-panel">
+      <h3>Загрузить результат анализа</h3>
+      <p>Claude прочитает PDF или фото бланка,<br>проверит все ли показатели присутствуют<br>и автоматически поставит дату</p>
+      <div class="upload-row">
+        <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📄 PDF</button>
+        <button class="btn-secondary" onclick="openCamera()">📷 Камера</button>
+      </div>
+      <input type="file" id="fileInput" accept=".pdf,image/*">
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+    </div>
+
+    <div class="ai-box" id="aiBox">
+      <div class="ai-box-head">
+        <div class="ai-box-icon">🤖</div>
+        <div>
+          <div class="ai-box-title">Результат проверки</div>
+          <div class="ai-box-file" id="aiFilename"></div>
+        </div>
+      </div>
+      <div id="aiBody"></div>
+    </div>
+
+    <!-- Recent uploads list -->
+    <div id="uploadHistory"></div>
+  </div>
+
+  <!-- TAB: DONE -->
+  <div id="tab-done" style="display:none;">
+    <div id="doneItems"></div>
+  </div>
+
+</div>
+
+<!-- Install banner -->
+<div class="install-banner" id="installBanner">
+  <div class="install-banner-text">
+    <b>Добавить на экран</b>
+    Нажмите <b>Поделиться →</b> затем <b>«На экран Домой»</b>
+  </div>
+  <button class="install-close" onclick="closeBanner()">Понятно</button>
+</div>
+
+<script>
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+
+const ANALYSES=[
+  {sec:"🩸 Кровь — общие",items:[
+    {id:"blood_type",name:"Группа крови, резус-фактор",months:null,note:"Бессрочно"},
+    {id:"hbsag",name:"HBsAg (гепатит B)",months:3},
+    {id:"anti_hcv",name:"Анти-HCV (гепатит C)",months:3},
+    {id:"anti_hiv",name:"ВИЧ (антитела)",months:3},
+    {id:"syphilis",name:"Антитела к Tr. pallidum (сифилис)",months:3},
+    {id:"rubella",name:"Краснуха — IgG и IgM",months:6},
+    {id:"amg",name:"АМГ (антимюллеров гормон)",months:6},
+    {id:"hormones",name:"Пролактин, ТТГ, АТ-ТПО",months:6},
+  ]},
+  {sec:"🔬 Кровь — развёрнутые",items:[
+    {id:"oac",name:"Общий анализ крови",months:1,need:["гемоглобин","эритроциты","лейкоциты","тромбоциты","СОЭ"]},
+    {id:"oam",name:"Общий анализ мочи",months:1},
+    {id:"biochem",name:"Биохимия крови",months:1,note:"АЛТ, АСТ, белок, креатинин, глюкоза, билирубин, D-димер",need:["АЛТ","АСТ","белок","креатинин","глюкоза","билирубин","D-димер"]},
+    {id:"coag",name:"Коагулограмма",months:1,note:"МНО, протромбин, фибриноген, СОЭ",need:["МНО","протромбин","фибриноген","СОЭ"]},
+    {id:"immune",name:"Иммунный статус — IgG",months:1,note:"При иммунодефиците — 1 мес.; при наличии иммунитета — бессрочно"},
+  ]},
+  {sec:"🦠 Инфекции — ПЦР",items:[
+    {id:"pcr_chlamydia",name:"ПЦР Chlamydia trachomatis",months:1},
+    {id:"pcr_myco",name:"ПЦР Mycoplasma genitalium",months:1},
+    {id:"pcr_tricho",name:"ПЦР Trichomonas vaginalis",months:1},
+    {id:"pcr_gonorrhea",name:"ПЦР Neisseria gonorrhoeae",months:1},
+    {id:"pcr_hpv",name:"ПЦР ВПЧ 16/18",months:1},
+    {id:"onco_smear",name:"Мазок на онкоцитологию",months:1},
+    {id:"ekt",name:"ЭКТ / мазок на флору",months:1},
+  ]},
+  {sec:"👨 Мужские анализы",items:[
+    {id:"m_blood_type",name:"Группа крови, резус-фактор (муж)",months:null,note:"Бессрочно"},
+    {id:"m_hbsag",name:"HBsAg (муж)",months:3},
+    {id:"m_anti_hcv",name:"Анти-HCV (муж)",months:3},
+    {id:"m_hiv",name:"ВИЧ (муж)",months:3},
+    {id:"m_syphilis",name:"Сифилис (муж)",months:3},
+    {id:"m_pcr_chlamydia",name:"ПЦР Chlamydia trachomatis (муж)",months:1},
+    {id:"m_pcr_myco",name:"ПЦР Mycoplasma genitalium (муж)",months:1},
+    {id:"mar_test",name:"MAR-тест",months:6,note:"По показаниям"},
+  ]},
+  {sec:"🧬 Спермограмма",items:[
+    {id:"spermogram",name:"Спермограмма + морфология по Крюгеру",months:null,note:"До 11 дн. — простой; до 40 дн. — для ЭКО/ВМИ",need:["концентрация","подвижность","морфология"]},
+  ]},
+  {sec:"🔍 УЗИ и консультации",items:[
+    {id:"uzi_pelvis",name:"УЗИ органов малого таза",months:1},
+    {id:"uzi_thyroid",name:"УЗИ щитовидной железы",months:1,note:"По показаниям"},
+    {id:"mammography",name:"Маммография / УЗИ молочных желёз",months:1,note:"До 40 лет — УЗИ"},
+    {id:"therapist",name:"Консультация терапевта (справка)",months:3},
+    {id:"genetics",name:"Консультация генетика",months:null,note:"По показаниям"},
+  ]},
+];
+
+const ALL_ITEMS=ANALYSES.flatMap(s=>s.items.map(i=>({...i,sec:s.sec})));
+
+// --- Storage ---
+function load(){try{return JSON.parse(localStorage.getItem('vmi3')||'{}')}catch{return{}}}
+function save(d){localStorage.setItem('vmi3',JSON.stringify(d))}
+
+// --- Status ---
+function status(dateStr,months){
+  if(!dateStr)return{t:'empty',label:'Не сдан',days:null};
+  if(months===null)return{t:'ok',label:'Бессрочно',days:null};
+  const taken=new Date(dateStr);taken.setHours(0,0,0,0);
+  const exp=new Date(taken);exp.setMonth(exp.getMonth()+months);
+  const d=Math.round((exp-TODAY)/86400000);
+  if(d<0)return{t:'danger',label:`Просрочен ${Math.abs(d)} дн. назад`,days:d};
+  if(d<=7)return{t:'warn',label:`Истекает через ${d} дн.`,days:d};
+  return{t:'ok',label:`Действителен ещё ${d} дн.`,days:d};
+}
+const DOTS={ok:'✓',warn:'⚠',danger:'✗',empty:'○'};
+
+// --- Tabs ---
+let currentTab='list';
+function showTab(tab){
+  currentTab=tab;
+  ['list','upload','done'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach(el=>{
+    el.classList.toggle('active',el.dataset.tab===tab);
+  });
+  document.getElementById('scrollArea').scrollTop=0;
+  if(tab==='done') renderDone();
+}
+
+// --- Render list ---
+function render(){
+  const data=load();
+  const el=document.getElementById('listItems');
+  el.innerHTML='';
+  let total=0,ok=0,warn=0,danger=0,empty=0;
+
+  ANALYSES.forEach(sec=>{
+    const st=document.createElement('div');
+    st.className='sec-title';st.textContent=sec.sec;el.appendChild(st);
+
+    sec.items.forEach(item=>{
+      total++;
+      const idata=data[item.id]||{};
+      const dateStr=idata.date||'';
+      const st2=status(dateStr,item.months);
+      const ai=idata.ai||null;
+      if(st2.t==='ok')ok++;
+      else if(st2.t==='warn')warn++;
+      else if(st2.t==='danger')danger++;
+      else empty++;
+
+      const card=document.createElement('div');
+      card.className='item-card';
+
+      let chip='';
+      if(ai){
+        if(ai.found&&(!ai.issues||!ai.issues.length))chip=`<span class="ai-chip chip-ok">ИИ ✓</span>`;
+        else if(ai.found&&ai.issues&&ai.issues.length)chip=`<span class="ai-chip chip-warn">ИИ ⚠</span>`;
+      }
+
+      card.innerHTML=`
+        <div class="item-main">
+          <div class="dot dot-${st2.t}">${DOTS[st2.t]}</div>
+          <div class="item-body">
+            <div class="item-name">${item.name}${chip}</div>
+            <div class="item-validity">Срок: ${item.months?item.months+' мес.':'Бессрочно'}</div>
+            <div class="item-st st-${st2.t}">${dateStr?st2.label:'—'}</div>
+          </div>
+        </div>
+        ${item.note?`<div class="item-note">💬 ${item.note}</div>`:''}
+        ${ai&&ai.issues&&ai.issues.length?`<ul class="item-issues">${ai.issues.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}
+        <div class="item-date">
+          <span class="date-lbl">Дата сдачи:</span>
+          <input type="date" class="date-inp" data-id="${item.id}" value="${dateStr}">
+          ${dateStr?`<button class="clr-btn" data-clear="${item.id}">очистить</button>`:''}
+        </div>
+      `;
+      el.appendChild(card);
+    });
+  });
+
+  el.querySelectorAll('.date-inp').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const d=load();
+      if(!d[e.target.dataset.id])d[e.target.dataset.id]={};
+      d[e.target.dataset.id].date=e.target.value;
+      save(d);render();
+    });
+  });
+  el.querySelectorAll('[data-clear]').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      const d=load();
+      if(d[e.target.dataset.clear])delete d[e.target.dataset.clear].date;
+      save(d);render();
+    });
+  });
+
+  document.getElementById('cntOk').textContent=ok;
+  document.getElementById('cntWarn').textContent=warn;
+  document.getElementById('cntDanger').textContent=danger;
+  document.getElementById('cntEmpty').textContent=empty;
+  const valid=ok+warn;
+  const pct=total?Math.round(valid/total*100):0;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressLabel').textContent=`${valid} / ${total}`;
+}
+
+// --- Render done tab ---
+function renderDone(){
+  const data=load();
+  const el=document.getElementById('doneItems');
+  el.innerHTML='';
+  const done=ALL_ITEMS.filter(item=>{
+    const d=data[item.id]||{};
+    const st2=status(d.date||'',item.months);
+    return st2.t==='ok'||st2.t==='warn';
+  });
+  if(!done.length){
+    el.innerHTML=`<div style="text-align:center;color:var(--muted);padding:40px 20px;font-size:14px;">Пока нет сданных анализов</div>`;
+    return;
+  }
+  done.forEach(item=>{
+    const idata=data[item.id]||{};
+    const st2=status(idata.date||'',item.months);
+    const card=document.createElement('div');
+    card.className='item-card';
+    card.innerHTML=`
+      <div class="item-main">
+        <div class="dot dot-${st2.t}">${DOTS[st2.t]}</div>
+        <div class="item-body">
+          <div class="item-name">${item.name}</div>
+          <div class="item-validity">Сдан: ${idata.date||'—'}</div>
+          <div class="item-st st-${st2.t}">${st2.label}</div>
+        </div>
+      </div>
+      <div style="height:12px;"></div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+// --- File upload ---
+const fileInput=document.getElementById('fileInput');
+const cameraInput=document.getElementById('cameraInput');
+function openCamera(){cameraInput.click();}
+fileInput.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);fileInput.value='';});
+cameraInput.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);cameraInput.value='';});
+
+function toB64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function processFile(file){
+  showTab('upload');
+  const box=document.getElementById('aiBox');
+  const body=document.getElementById('aiBody');
+  const fname=document.getElementById('aiFilename');
+  box.classList.add('show');
+  fname.textContent=file.name;
+  body.innerHTML=`<div class="spinner-row"><div class="spinner"></div>Claude читает документ…</div>`;
+
+  try{
+    const b64=await toB64(file);
+    const isPdf=file.type==='application/pdf';
+    const mt=isPdf?'application/pdf':(file.type||'image/jpeg');
+    const block=isPdf
+      ?{type:'document',source:{type:'base64',media_type:mt,data:b64}}
+      :{type:'image',source:{type:'base64',media_type:mt,data:b64}};
+
+    const sys=`Ты медицинский ассистент. Тебе дают результат анализа (лабораторный бланк).
+Список анализов для сопоставления:
+${ALL_ITEMS.map(a=>`id="${a.id}": ${a.name}${a.need?' (нужны: '+a.need.join(', ')+')':''}`).join('\n')}
+
+Задача:
+1. Определи какой это анализ по id из списка выше.
+2. Проверь наличие всех обязательных показателей (поле need).
+3. Отметь отсутствующие показатели в missing.
+
+Ответь ТОЛЬКО JSON без markdown:
+{"identified":["id1"],"items":{"id1":{"found":true,"missing":[],"note":"комментарий"}},"summary":"вывод на русском"}`;
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        system:sys,
+        messages:[{role:'user',content:[block,{type:'text',text:'Проверь бланк, верни JSON.'}]}]
+      })
+    });
+    const apiData=await resp.json();
+    const raw=apiData.content?.map(b=>b.text||'').join('')||'';
+    let parsed;
+    try{parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());}
+    catch{throw new Error('Ошибка разбора ответа');}
+
+    // Save to storage
+    const store=load();
+    const todayStr=TODAY.toISOString().slice(0,10);
+    if(parsed.items){
+      Object.entries(parsed.items).forEach(([id,info])=>{
+        if(!store[id])store[id]={};
+        store[id].ai={found:info.found,issues:info.missing||[],note:info.note||''};
+        if(info.found&&!store[id].date)store[id].date=todayStr;
+      });
+    }
+    save(store);
+
+    // Build UI
+    const ids=parsed.identified||[];
+    let html='';
+    if(ids.length){
+      html+=`<div class="ai-section">Распознаны:</div><div>`;
+      ids.forEach(id=>{
+        const a=ALL_ITEMS.find(x=>x.id===id);
+        const info=parsed.items?.[id];
+        const hasMiss=info?.missing?.length>0;
+        html+=`<span class="tag ${hasMiss?'tag-warn':'tag-ok'}">${hasMiss?'⚠':'✓'} ${a?a.name:id}</span>`;
+      });
+      html+=`</div>`;
+    } else {
+      html+=`<div style="color:var(--danger);font-size:13px;">Анализ не найден в чек-листе</div>`;
+    }
+
+    const withMiss=Object.entries(parsed.items||{}).filter(([,v])=>v.missing?.length>0);
+    if(withMiss.length){
+      html+=`<div class="ai-missing">`;
+      withMiss.forEach(([id,info])=>{
+        const a=ALL_ITEMS.find(x=>x.id===id);
+        html+=`<b>${a?a.name:id}:</b> не хватает — ${info.missing.join(', ')}<br>`;
+      });
+      html+=`</div>`;
+    }
+
+    if(parsed.summary)html+=`<div class="ai-note">💬 ${parsed.summary}</div>`;
+    if(ids.length)html+=`<button class="btn-accept" onclick="acceptAI()">✓ Принять и перейти к списку</button>`;
+    body.innerHTML=html;
+    render();
+
+  }catch(err){
+    body.innerHTML=`<div class="ai-note" style="color:var(--danger)">Ошибка: ${err.message}</div>`;
+  }
+}
+
+function acceptAI(){
+  document.getElementById('aiBox').classList.remove('show');
+  showTab('list');
+}
+
+// --- Install banner (iOS only, once) ---
+function isIOS(){return/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;}
+function isStandalone(){return window.navigator.standalone===true;}
+if(isIOS()&&!isStandalone()&&!localStorage.getItem('banner_closed')){
+  setTimeout(()=>document.getElementById('installBanner').classList.add('show'),2000);
+}
+function closeBanner(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('banner_closed','1');
+}
+
+// --- Service Worker ---
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+
+render();
+</script>
+</body>
+</html>
