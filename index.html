@@ -276,7 +276,7 @@ body{
 <div class="nav">
   <div>
     <div class="nav-title">💊 ВМИ анализы</div>
-    <div class="nav-sub">Клиника Савельевской</div>
+    <div class="nav-sub">Мои анализы · Клиника Савельевской</div>
   </div>
   <div class="nav-right">
     <button class="icon-btn" onclick="showTab('upload')" title="Загрузить">📎</button>
@@ -301,6 +301,15 @@ body{
       <button onclick="closeSettings()" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Отмена</button>
     </div>
     <div id="settingsSaved" style="display:none;text-align:center;color:#2E9E6B;font-size:13px;font-weight:600;margin-top:12px;">✓ Ключ сохранён!</div>
+    <hr style="border:none;border-top:1px solid #DDD8EF;margin:18px 0;">
+    <p style="font-size:13px;font-weight:600;color:#1A1730;margin-bottom:4px;">💾 Резервная копия</p>
+    <p style="font-size:12px;color:#7A6F9A;margin-bottom:12px;line-height:1.5;">Сохраните данные — они не потеряются при очистке Safari</p>
+    <div style="display:flex;gap:8px;">
+      <button onclick="exportData()" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">📤 Скачать копию</button>
+      <button onclick="document.getElementById('importInput').click()" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">📥 Восстановить</button>
+    </div>
+    <input type="file" id="importInput" accept=".json" style="display:none">
+    <div id="importMsg" style="display:none;text-align:center;font-size:13px;font-weight:600;margin-top:10px;"></div>
   </div>
 </div>
 </div>
@@ -310,6 +319,7 @@ body{
   <button class="tab active" data-tab="list" onclick="showTab('list')">Чек-лист</button>
   <button class="tab" data-tab="upload" onclick="showTab('upload')">📎 Загрузить бланк</button>
   <button class="tab" data-tab="done" onclick="showTab('done')">✓ Сданные</button>
+  <button class="tab" data-tab="donors" onclick="showTab('donors')">🧬 Доноры</button>
 </div>
 
 <!-- Scroll area -->
@@ -361,6 +371,141 @@ body{
     <div id="uploadHistory"></div>
   </div>
 
+  <!-- TAB: DONORS -->
+  <div id="tab-donors" style="display:none;">
+
+    <!-- My profile card -->
+    <div id="myProfileCard" style="background:#fff;border-radius:14px;border:1.5px solid #DDD8EF;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:14px;font-weight:700;color:#6C5EA8;">👩 Мой профиль для матчинга</div>
+        <button onclick="toggleMyProfile()" style="background:#EDE9F7;border:none;border-radius:8px;padding:5px 10px;font-size:12px;color:#6C5EA8;cursor:pointer;font-family:Inter,sans-serif;">Изменить</button>
+      </div>
+      <div id="myProfileView"></div>
+      <div id="myProfileForm" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Группа крови</div>
+            <select id="myBloodType" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:7px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>I (O)</option><option>II (A)</option><option>III (B)</option><option>IV (AB)</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Резус-фактор</div>
+            <select id="myRhesus" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:7px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>Rh+ (положительный)</option><option>Rh− (отрицательный)</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="saveMyProfile()" style="width:100%;background:#6C5EA8;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Сохранить</button>
+      </div>
+    </div>
+
+    <!-- Add donor button -->
+    <button onclick="openAddDonor()" style="width:100%;background:#6C5EA8;color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px;">
+      ＋ Добавить донора
+    </button>
+
+    <!-- Donors list -->
+    <div id="donorsList"></div>
+
+    <!-- Add/Edit donor modal -->
+    <div id="donorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;overflow-y:auto;padding:20px 14px 40px;">
+      <div style="background:#fff;border-radius:18px;padding:20px;max-width:420px;margin:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:700;color:#6C5EA8;" id="donorModalTitle">Новый донор</div>
+          <button onclick="closeDonorModal()" style="background:#EDE9F7;border:none;border-radius:8px;width:30px;height:30px;font-size:16px;cursor:pointer;">×</button>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7A6F9A;margin-bottom:8px;">Основное</div>
+        <input id="dName" placeholder="Номер/псевдоним донора" style="width:100%;border:1.5px solid #DDD8EF;border-radius:10px;padding:10px;font-size:13px;font-family:Inter,sans-serif;margin-bottom:8px;background:#F0EDF8;">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Группа крови</div>
+            <select id="dBlood" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>I (O)</option><option>II (A)</option><option>III (B)</option><option>IV (AB)</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Резус-фактор</div>
+            <select id="dRhesus" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>Rh+ (положительный)</option><option>Rh− (отрицательный)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7A6F9A;margin:12px 0 8px;">Фенотип</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Цвет глаз</div>
+            <select id="dEyes" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>Голубые</option><option>Зелёные</option><option>Серые</option><option>Карие</option><option>Чёрные</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Цвет волос</div>
+            <select id="dHair" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>Светлые</option><option>Русые</option><option>Тёмные</option><option>Чёрные</option><option>Рыжие</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Рост (см)</div>
+            <input id="dHeight" type="number" placeholder="175" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Телосложение</div>
+            <select id="dBuild" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+              <option value="">—</option>
+              <option>Худощавое</option><option>Среднее</option><option>Атлетическое</option><option>Плотное</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7A6F9A;margin:12px 0 8px;">Спермограмма</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Концентрация (млн/мл)</div>
+            <input id="dConc" type="number" placeholder="≥16" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Подвижность % (PR)</div>
+            <input id="dMotility" type="number" placeholder="≥30" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Морфология % (Крюгер)</div>
+            <input id="dMorph" type="number" placeholder="≥4" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#7A6F9A;margin-bottom:4px;">Объём (мл)</div>
+            <input id="dVolume" type="number" placeholder="≥1.4" step="0.1" style="width:100%;border:1.5px solid #DDD8EF;border-radius:8px;padding:8px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;">
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7A6F9A;margin:12px 0 8px;">Инфекционный скрининг</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;" id="infectionChecks">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1A1730;cursor:pointer;"><input type="checkbox" id="dHiv"> ВИЧ отриц.</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1A1730;cursor:pointer;"><input type="checkbox" id="dHbsag"> HBsAg отриц.</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1A1730;cursor:pointer;"><input type="checkbox" id="dHcv"> HCV отриц.</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1A1730;cursor:pointer;"><input type="checkbox" id="dSyph"> Сифилис отриц.</label>
+        </div>
+
+        <textarea id="dNotes" placeholder="Заметки (необязательно)" style="width:100%;border:1.5px solid #DDD8EF;border-radius:10px;padding:10px;font-size:13px;font-family:Inter,sans-serif;background:#F0EDF8;height:70px;resize:none;margin-bottom:12px;"></textarea>
+
+        <div style="display:flex;gap:8px;">
+          <button onclick="saveDonor()" style="flex:1;background:#6C5EA8;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Сохранить</button>
+          <button onclick="closeDonorModal()" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- TAB: DONE -->
   <div id="tab-done" style="display:none;">
     <div id="doneItems"></div>
@@ -382,50 +527,48 @@ const TODAY=new Date();TODAY.setHours(0,0,0,0);
 
 const ANALYSES=[
   {sec:"🩸 Кровь — общие",items:[
-    {id:"blood_type",name:"Группа крови, резус-фактор",months:null,note:"Бессрочно"},
+    {id:"blood_type",name:"Группа крови, резус-фактор",months:null,note:"Бессрочно. Мед.бланк любого срока давности"},
+    {id:"anti_rhesus",name:"Антитела к резус-фактору",months:null,note:"Индивидуально — при отрицательном резус-факторе"},
+    {id:"syphilis",name:"Антитела к Tr. pallidum (сифилис)",months:3},
+    {id:"anti_hiv",name:"Анти-ВИЧ, антиген p24",months:3},
     {id:"hbsag",name:"HBsAg (гепатит B)",months:3},
     {id:"anti_hcv",name:"Анти-HCV (гепатит C)",months:3},
-    {id:"anti_hiv",name:"ВИЧ (антитела)",months:3},
-    {id:"syphilis",name:"Антитела к Tr. pallidum (сифилис)",months:3},
-    {id:"rubella",name:"Краснуха — IgG и IgM",months:6},
-    {id:"amg",name:"АМГ (антимюллеров гормон)",months:6},
-    {id:"hormones",name:"Пролактин, ТТГ, АТ-ТПО",months:6},
   ]},
-  {sec:"🔬 Кровь — развёрнутые",items:[
-    {id:"oac",name:"Общий анализ крови",months:1,need:["гемоглобин","эритроциты","лейкоциты","тромбоциты","СОЭ"]},
+  {sec:"🔬 Гормоны крови",items:[
+    {id:"fsg_lg",name:"ФСГ, ЛГ",months:6,note:"На 2-5 день цикла"},
+    {id:"prolactin",name:"Пролактин",months:6,note:"На 2-5 день цикла, по показаниям"},
+    {id:"tsh_amg",name:"ТТГ, АТ-ТПО, АМГ",months:6,note:"На любой день цикла. АМГ — обязательный анализ"},
+    {id:"rubella",name:"Антитела к краснухе — IgG и IgM",months:null,note:"При наличии IgG — бессрочно. При отсутствии иммунитета — 1 месяц"},
+  ]},
+  {sec:"💉 Кровь — клинические",items:[
+    {id:"oac",name:"Общий анализ крови",months:1,note:"С лейкоцитарной формулой и СОЭ",need:["гемоглобин","эритроциты","лейкоциты","тромбоциты","СОЭ"]},
     {id:"oam",name:"Общий анализ мочи",months:1},
-    {id:"biochem",name:"Биохимия крови",months:1,note:"АЛТ, АСТ, белок, креатинин, глюкоза, билирубин, D-димер",need:["АЛТ","АСТ","белок","креатинин","глюкоза","билирубин","D-димер"]},
-    {id:"coag",name:"Коагулограмма",months:1,note:"МНО, протромбин, фибриноген, СОЭ",need:["МНО","протромбин","фибриноген","СОЭ"]},
-    {id:"immune",name:"Иммунный статус — IgG",months:1,note:"При иммунодефиците — 1 мес.; при наличии иммунитета — бессрочно"},
+    {id:"coag",name:"Коагулограмма",months:1,note:"АЧТВ, МНО, протромбиновое время, фибриноген, тромбиновое время, Д-димер",need:["АЧТВ","МНО","протромбин","фибриноген","тромбиновое время","Д-димер"]},
+    {id:"biochem",name:"Биохимия крови",months:1,note:"АСТ, АЛТ, общий белок, креатинин, мочевина, глюкоза, билирубин общий, билирубин связанный",need:["АСТ","АЛТ","белок","креатинин","мочевина","глюкоза","билирубин общий","билирубин связанный"]},
+    {id:"ferritin",name:"Ферритин",months:6,note:"По показаниям"},
+    {id:"homocysteine",name:"Гомоцистеин",months:6,note:"По показаниям"},
   ]},
-  {sec:"🦠 Инфекции — ПЦР",items:[
-    {id:"pcr_chlamydia",name:"ПЦР Chlamydia trachomatis",months:1},
-    {id:"pcr_myco",name:"ПЦР Mycoplasma genitalium",months:1},
-    {id:"pcr_tricho",name:"ПЦР Trichomonas vaginalis",months:1},
-    {id:"pcr_gonorrhea",name:"ПЦР Neisseria gonorrhoeae",months:1},
-    {id:"pcr_hpv",name:"ПЦР ВПЧ 16/18",months:1},
-    {id:"onco_smear",name:"Мазок на онкоцитологию",months:1},
-    {id:"ekt",name:"ЭКТ / мазок на флору",months:1},
+  {sec:"🦠 Мазки и ПЦР",items:[
+    {id:"ekt",name:"Мазок на флору",months:1,note:"Из влагалища и цервикального канала"},
+    {id:"pcr_chlamydia",name:"ПЦР Chlamydia trachomatis",months:3},
+    {id:"pcr_myco",name:"ПЦР Mycoplasma genitalium",months:3},
+    {id:"pcr_gonorrhea",name:"ПЦР Neisseria gonorrhoeae",months:3},
+    {id:"pcr_tricho",name:"ПЦР Trichomonas vaginalis",months:3},
+    {id:"pcr_hpv",name:"ПЦР ВПЧ 16/18",months:12,note:"По показаниям"},
+    {id:"onco_smear",name:"Мазок на онкоцитологию",months:12},
   ]},
-  {sec:"👨 Мужские анализы",items:[
-    {id:"m_blood_type",name:"Группа крови, резус-фактор (муж)",months:null,note:"Бессрочно"},
-    {id:"m_hbsag",name:"HBsAg (муж)",months:3},
-    {id:"m_anti_hcv",name:"Анти-HCV (муж)",months:3},
-    {id:"m_hiv",name:"ВИЧ (муж)",months:3},
-    {id:"m_syphilis",name:"Сифилис (муж)",months:3},
-    {id:"m_pcr_chlamydia",name:"ПЦР Chlamydia trachomatis (муж)",months:1},
-    {id:"m_pcr_myco",name:"ПЦР Mycoplasma genitalium (муж)",months:1},
-    {id:"mar_test",name:"MAR-тест",months:6,note:"По показаниям"},
-  ]},
-  {sec:"🧬 Спермограмма",items:[
-    {id:"spermogram",name:"Спермограмма + морфология по Крюгеру",months:null,note:"До 11 дн. — простой; до 40 дн. — для ЭКО/ВМИ",need:["концентрация","подвижность","морфология"]},
-  ]},
-  {sec:"🔍 УЗИ и консультации",items:[
-    {id:"uzi_pelvis",name:"УЗИ органов малого таза",months:1},
-    {id:"uzi_thyroid",name:"УЗИ щитовидной железы",months:1,note:"По показаниям"},
-    {id:"mammography",name:"Маммография / УЗИ молочных желёз",months:1,note:"До 40 лет — УЗИ"},
-    {id:"therapist",name:"Консультация терапевта (справка)",months:3},
-    {id:"genetics",name:"Консультация генетика",months:null,note:"По показаниям"},
+  {sec:"🔍 УЗИ, инструментальные и консультации",items:[
+    {id:"ecg",name:"ЭКГ",months:12,note:"С лентой"},
+    {id:"xray",name:"Флюорография / Рентген / КТ ОГК",months:12},
+    {id:"uzi_pelvis",name:"УЗИ органов малого таза",months:1,note:"На 5-7 д.ц. по показаниям. Обязательно за 2 недели до вступления в программу ВРТ"},
+    {id:"mammography",name:"УЗИ молочных желёз / Маммография",months:12,note:"До 11 д.цикла. С 40 лет — маммография дополнительно"},
+    {id:"colposcopy",name:"Кольпоскопия",months:12,note:"Осмотр шейки матки, по показаниям"},
+    {id:"therapist",name:"Консультация терапевта",months:12,note:"Закл.: ЭКО и вынашивание беременности не противопоказано"},
+    {id:"mammologist",name:"Консультация онколога-маммолога",months:12,note:"Закл.: ЭКО и вынашивание беременности не противопоказано"},
+    {id:"uzi_thyroid",name:"УЗИ щитовидной железы",months:12,note:"По показаниям"},
+    {id:"endocrinologist",name:"Консультация эндокринолога",months:12,note:"По показаниям. Закл.: ЭКО и вынашивание беременности не противопоказано"},
+    {id:"karyotype",name:"Кариотип",months:null,note:"Бессрочно. Самый простой, без фото, без аберраций"},
+    {id:"genetics",name:"Консультация генетика",months:null,note:"При изменениях кариотипа, бесплодии неясного генеза, привычном невынашивании, повторных неудачах ВРТ (2+ переноса), кровнородственном браке"},
   ]},
 ];
 
@@ -452,7 +595,7 @@ const DOTS={ok:'✓',warn:'⚠',danger:'✗',empty:'○'};
 let currentTab='list';
 function showTab(tab){
   currentTab=tab;
-  ['list','upload','done'].forEach(t=>{
+  ['list','upload','done','donors'].forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===tab?'':'none';
   });
   document.querySelectorAll('.tab').forEach(el=>{
@@ -460,6 +603,7 @@ function showTab(tab){
   });
   document.getElementById('scrollArea').scrollTop=0;
   if(tab==='done') renderDone();
+  if(tab==='donors') renderDonors();
 }
 
 // --- Render list ---
@@ -613,11 +757,13 @@ ${ALL_ITEMS.map(a=>`id="${a.id}": ${a.name}${a.need?' (нужны: '+a.need.join
 
 Задача:
 1. Определи какой это анализ по id из списка выше.
-2. Проверь наличие всех обязательных показателей (поле need).
-3. Отметь отсутствующие показатели в missing.
+2. Найди дату сдачи или дату выдачи результата на бланке (формат YYYY-MM-DD). Если не найдена — верни null.
+3. Проверь наличие всех обязательных показателей (поле need).
+4. Отметь отсутствующие показатели в missing.
 
 Ответь ТОЛЬКО JSON без markdown:
-{"identified":["id1"],"items":{"id1":{"found":true,"missing":[],"note":"комментарий"}},"summary":"вывод на русском"}`;
+{"identified":["id1"],"date":"2025-06-13","items":{"id1":{"found":true,"missing":[],"note":"комментарий"}},"summary":"вывод на русском"}
+Поле date — общая дата для всех анализов в документе, null если не найдена.`;
 
     const apiKey=localStorage.getItem('anthropic_key')||'';
     if(!apiKey){
@@ -643,11 +789,12 @@ ${ALL_ITEMS.map(a=>`id="${a.id}": ${a.name}${a.need?' (нужны: '+a.need.join
     // Save to storage
     const store=load();
     const todayStr=TODAY.toISOString().slice(0,10);
+    const docDate=parsed.date||todayStr; // date from document or today
     if(parsed.items){
       Object.entries(parsed.items).forEach(([id,info])=>{
         if(!store[id])store[id]={};
         store[id].ai={found:info.found,issues:info.missing||[],note:info.note||''};
-        if(info.found&&!store[id].date)store[id].date=todayStr;
+        if(info.found&&!store[id].date)store[id].date=docDate;
       });
     }
     save(store);
@@ -655,6 +802,11 @@ ${ALL_ITEMS.map(a=>`id="${a.id}": ${a.name}${a.need?' (нужны: '+a.need.join
     // Build UI
     const ids=parsed.identified||[];
     let html='';
+    if(parsed.date){
+      html+=`<div style="font-size:12px;background:#E4F5EE;color:#2E9E6B;border-radius:8px;padding:7px 11px;margin-bottom:10px;">📅 Дата с бланка: <b>${parsed.date}</b> — проставлена автоматически</div>`;
+    } else {
+      html+=`<div style="font-size:12px;background:#FEF3CD;color:#C97A00;border-radius:8px;padding:7px 11px;margin-bottom:10px;">📅 Дата не найдена на бланке — проставлена сегодняшняя (можно изменить вручную)</div>`;
+    }
     if(ids.length){
       html+=`<div class="ai-section">Распознаны:</div><div>`;
       ids.forEach(id=>{
@@ -720,12 +872,296 @@ function saveSettings(){
   setTimeout(closeSettings,1200);
 }
 
+// --- Export / Import ---
+function exportData(){
+  const data=load();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const date=new Date().toISOString().slice(0,10);
+  a.href=url;
+  a.download=`vmi-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const imp=document.getElementById('importInput');
+  if(imp){
+    imp.addEventListener('change',e=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const r=new FileReader();
+      r.onload=ev=>{
+        try{
+          const data=JSON.parse(ev.target.result);
+          save(data);
+          render();
+          const msg=document.getElementById('importMsg');
+          msg.textContent='✓ Данные восстановлены!';
+          msg.style.color='#2E9E6B';
+          msg.style.display='block';
+          setTimeout(()=>{msg.style.display='none';closeSettings();},1500);
+        }catch{
+          const msg=document.getElementById('importMsg');
+          msg.textContent='⚠ Ошибка файла';
+          msg.style.color='#C0392B';
+          msg.style.display='block';
+        }
+      };
+      r.readAsText(file);
+      imp.value='';
+    });
+  }
+});
+
 // --- Service Worker ---
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
 
 render();
+
+
+// --- Donors ---
+function loadDonors(){try{return JSON.parse(localStorage.getItem('vmi_donors')||'[]')}catch{return[]}}
+function saveDonors(d){localStorage.setItem('vmi_donors',JSON.stringify(d))}
+function loadMyProfile(){try{return JSON.parse(localStorage.getItem('vmi_myprofile')||'{}')}catch{return{}}}
+function saveMyProfileData(d){localStorage.setItem('vmi_myprofile',JSON.stringify(d))}
+
+let editingDonorId=null;
+
+function openAddDonor(){
+  editingDonorId=null;
+  document.getElementById('donorModalTitle').textContent='Новый донор';
+  ['dName','dConc','dMotility','dMorph','dVolume','dNotes'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  ['dBlood','dRhesus','dEyes','dHair','dBuild'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  ['dHiv','dHbsag','dHcv','dSyph'].forEach(id=>{
+    document.getElementById(id).checked=false;
+  });
+  document.getElementById('donorModal').style.display='block';
+}
+
+function closeDonorModal(){
+  document.getElementById('donorModal').style.display='none';
+}
+
+function saveDonor(){
+  const donors=loadDonors();
+  const donor={
+    id: editingDonorId || Date.now().toString(),
+    name: document.getElementById('dName').value.trim()||'Донор',
+    blood: document.getElementById('dBlood').value,
+    rhesus: document.getElementById('dRhesus').value,
+    eyes: document.getElementById('dEyes').value,
+    hair: document.getElementById('dHair').value,
+    height: document.getElementById('dHeight').value,
+    build: document.getElementById('dBuild').value,
+    conc: document.getElementById('dConc').value,
+    motility: document.getElementById('dMotility').value,
+    morph: document.getElementById('dMorph').value,
+    volume: document.getElementById('dVolume').value,
+    hiv: document.getElementById('dHiv').checked,
+    hbsag: document.getElementById('dHbsag').checked,
+    hcv: document.getElementById('dHcv').checked,
+    syph: document.getElementById('dSyph').checked,
+    notes: document.getElementById('dNotes').value.trim(),
+  };
+  if(editingDonorId){
+    const idx=donors.findIndex(d=>d.id===editingDonorId);
+    if(idx>=0) donors[idx]=donor;
+  } else {
+    donors.push(donor);
+  }
+  saveDonors(donors);
+  closeDonorModal();
+  renderDonors();
+}
+
+function editDonor(id){
+  const donors=loadDonors();
+  const d=donors.find(x=>x.id===id);
+  if(!d)return;
+  editingDonorId=id;
+  document.getElementById('donorModalTitle').textContent='Редактировать донора';
+  document.getElementById('dName').value=d.name||'';
+  document.getElementById('dBlood').value=d.blood||'';
+  document.getElementById('dRhesus').value=d.rhesus||'';
+  document.getElementById('dEyes').value=d.eyes||'';
+  document.getElementById('dHair').value=d.hair||'';
+  document.getElementById('dHeight').value=d.height||'';
+  document.getElementById('dBuild').value=d.build||'';
+  document.getElementById('dConc').value=d.conc||'';
+  document.getElementById('dMotility').value=d.motility||'';
+  document.getElementById('dMorph').value=d.morph||'';
+  document.getElementById('dVolume').value=d.volume||'';
+  document.getElementById('dHiv').checked=d.hiv||false;
+  document.getElementById('dHbsag').checked=d.hbsag||false;
+  document.getElementById('dHcv').checked=d.hcv||false;
+  document.getElementById('dSyph').checked=d.syph||false;
+  document.getElementById('dNotes').value=d.notes||'';
+  document.getElementById('donorModal').style.display='block';
+}
+
+function deleteDonor(id){
+  if(!confirm('Удалить донора?'))return;
+  const donors=loadDonors().filter(d=>d.id!==id);
+  saveDonors(donors);
+  renderDonors();
+}
+
+function matchScore(donor, profile){
+  let score=0; let max=0; const reasons=[];
+  // Blood compatibility (Rh-)
+  max+=3;
+  if(profile.rhesus && donor.rhesus){
+    if(profile.rhesus.includes('−') && donor.rhesus.includes('+')){
+      reasons.push({t:'warn',txt:'⚠ Резус-конфликт: у вас Rh−, у донора Rh+'});
+    } else {
+      score+=3;
+      reasons.push({t:'ok',txt:'✓ Резус совместим'});
+    }
+  }
+  // Spermogram
+  max+=3;
+  const conc=parseFloat(donor.conc);
+  const mot=parseFloat(donor.motility);
+  const morph=parseFloat(donor.morph);
+  let spermOk=0;
+  if(conc>=16) spermOk++;
+  if(mot>=30) spermOk++;
+  if(morph>=4) spermOk++;
+  score+=spermOk;
+  if(spermOk===3) reasons.push({t:'ok',txt:'✓ Спермограмма в норме (ВОЗ 2021)'});
+  else if(spermOk>=1) reasons.push({t:'warn',txt:`⚠ Спермограмма: ${spermOk}/3 показателей в норме`});
+  else if(donor.conc||donor.motility||donor.morph) reasons.push({t:'danger',txt:'✗ Спермограмма ниже нормы'});
+  // Infections
+  max+=4;
+  const infScore=[donor.hiv,donor.hbsag,donor.hcv,donor.syph].filter(Boolean).length;
+  score+=infScore;
+  if(infScore===4) reasons.push({t:'ok',txt:'✓ Инфекционный скрининг чист'});
+  else if(infScore>0) reasons.push({t:'warn',txt:`⚠ Инфекционный скрининг: ${infScore}/4 анализов`});
+  return{score,max,pct:max?Math.round(score/max*100):0,reasons};
+}
+
+function renderDonors(){
+  const donors=loadDonors();
+  const profile=loadMyProfile();
+  const el=document.getElementById('donorsList');
+  renderMyProfileView();
+
+  if(!donors.length){
+    el.innerHTML=`<div style="text-align:center;color:#9A92B0;padding:32px 20px;font-size:14px;">Доноры ещё не добавлены.<br>Нажмите «＋ Добавить донора»</div>`;
+    return;
+  }
+
+  // Sort by match score
+  const scored=donors.map(d=>({d,m:matchScore(d,profile)})).sort((a,b)=>b.m.pct-a.m.pct);
+
+  el.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#7A6F9A;margin-bottom:8px;">Доноры · по совместимости</div>';
+
+  scored.forEach(({d,m},i)=>{
+    const rankColor=i===0?'#2E9E6B':i===1?'#6C5EA8':'#9A92B0';
+    const card=document.createElement('div');
+    card.style.cssText='background:#fff;border-radius:14px;border:1.5px solid #DDD8EF;padding:14px;margin-bottom:10px;';
+    
+    const infIcons=[d.hiv?'ВИЧ✓':'',d.hbsag?'HBV✓':'',d.hcv?'HCV✓':'',d.syph?'Сиф✓':''].filter(Boolean).join(' · ');
+
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#1A1730;">${i===0?'🥇 ':''}${d.name}</div>
+          <div style="font-size:12px;color:#7A6F9A;margin-top:2px;">${d.blood||'—'} · ${d.rhesus||'—'}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:700;color:${rankColor};">${m.pct}%</div>
+          <div style="font-size:10px;color:#7A6F9A;">совместимость</div>
+        </div>
+      </div>
+      <div style="height:6px;background:#F0EDF8;border-radius:99px;margin-bottom:10px;overflow:hidden;">
+        <div style="height:100%;width:${m.pct}%;background:${rankColor};border-radius:99px;transition:width .4s;"></div>
+      </div>
+      <div style="margin-bottom:10px;">
+        ${m.reasons.map(r=>`<div style="font-size:12px;color:${r.t==='ok'?'#2E9E6B':r.t==='warn'?'#C97A00':'#C0392B'};padding:2px 0;">${r.txt}</div>`).join('')}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
+        ${d.eyes?`<span style="background:#F0EDF8;border-radius:99px;padding:3px 10px;font-size:11px;color:#6C5EA8;">👁 ${d.eyes}</span>`:''}
+        ${d.hair?`<span style="background:#F0EDF8;border-radius:99px;padding:3px 10px;font-size:11px;color:#6C5EA8;">💇 ${d.hair}</span>`:''}
+        ${d.height?`<span style="background:#F0EDF8;border-radius:99px;padding:3px 10px;font-size:11px;color:#6C5EA8;">📏 ${d.height} см</span>`:''}
+        ${d.build?`<span style="background:#F0EDF8;border-radius:99px;padding:3px 10px;font-size:11px;color:#6C5EA8;">🏃 ${d.build}</span>`:''}
+      </div>
+      ${d.conc||d.motility||d.morph?`<div style="font-size:11px;color:#7A6F9A;background:#F0EDF8;border-radius:8px;padding:7px 10px;margin-bottom:10px;">
+        🔬 Спермограмма: ${d.conc?'конц. '+d.conc+' млн/мл · ':''}${d.motility?'подв. '+d.motility+'% · ':''}${d.morph?'морф. '+d.morph+'%':''}
+      </div>`:''}
+      ${infIcons?`<div style="font-size:11px;color:#2E9E6B;margin-bottom:10px;">🛡 ${infIcons}</div>`:''}
+      ${d.notes?`<div style="font-size:12px;color:#7A6F9A;font-style:italic;margin-bottom:10px;">💬 ${d.notes}</div>`:''}
+      <div style="display:flex;gap:8px;">
+        <button onclick="editDonor('${d.id}')" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">✏️ Изменить</button>
+        <button onclick="deleteDonor('${d.id}')" style="background:#FDECEA;color:#C0392B;border:none;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">🗑</button>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+}
+
+function renderMyProfileView(){
+  const p=loadMyProfile();
+  const el=document.getElementById('myProfileView');
+  if(!p.blood && !p.rhesus){
+    el.innerHTML=`<div style="font-size:12px;color:#7A6F9A;font-style:italic;">Укажите группу крови и резус для матчинга доноров</div>`;
+  } else {
+    el.innerHTML=`<div style="font-size:13px;color:#1A1730;">🩸 ${p.blood||'—'} · ${p.rhesus||'—'}</div>`;
+  }
+}
+
+function toggleMyProfile(){
+  const form=document.getElementById('myProfileForm');
+  const p=loadMyProfile();
+  if(form.style.display==='none'){
+    document.getElementById('myBloodType').value=p.blood||'';
+    document.getElementById('myRhesus').value=p.rhesus||'';
+    form.style.display='block';
+  } else {
+    form.style.display='none';
+  }
+}
+
+function saveMyProfile(){
+  saveMyProfileData({
+    blood: document.getElementById('myBloodType').value,
+    rhesus: document.getElementById('myRhesus').value,
+  });
+  document.getElementById('myProfileForm').style.display='none';
+  renderMyProfileView();
+  renderDonors();
+}
+
+// --- Monthly backup reminder ---
+(function(){
+  const last = localStorage.getItem('last_backup_reminder');
+  const now = Date.now();
+  const MONTH = 30 * 24 * 60 * 60 * 1000;
+  const hasData = Object.keys(load()).length > 0;
+  if(hasData && (!last || now - parseInt(last) > MONTH)){
+    setTimeout(()=>{
+      const banner = document.createElement('div');
+      banner.style.cssText='position:fixed;bottom:calc(env(safe-area-inset-bottom)+8px);left:14px;right:14px;background:#6C5EA8;color:#fff;border-radius:14px;padding:14px 16px;z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.2);display:flex;align-items:center;gap:12px;';
+      banner.innerHTML=`
+        <div style="font-size:22px;">💾</div>
+        <div style="flex:1;font-size:13px;line-height:1.4;"><b style="display:block;font-size:14px;margin-bottom:2px;">Сохраните резервную копию</b>Прошёл месяц — рекомендуем сохранить данные</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button onclick="exportData();this.closest('div[style]').remove();localStorage.setItem('last_backup_reminder','${now}');" style="background:#fff;color:#6C5EA8;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap;">📤 Скачать</button>
+          <button onclick="this.closest('div[style]').remove();localStorage.setItem('last_backup_reminder','${now}');" style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Позже</button>
+        </div>
+      `;
+      document.body.appendChild(banner);
+    }, 3000);
+  }
+})();
 </script>
 </body>
 </html>
