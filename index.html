@@ -281,7 +281,28 @@ body{
   <div class="nav-right">
     <button class="icon-btn" onclick="showTab('upload')" title="Загрузить">📎</button>
     <button class="icon-btn" onclick="showTab('list')" title="Список">📋</button>
+    <button class="icon-btn" onclick="openSettings()" title="Настройки">⚙️</button>
   </div>
+
+<!-- Settings modal -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;padding:40px 20px;">
+  <div style="background:#fff;border-radius:18px;padding:24px 20px;max-width:420px;margin:auto;margin-top:60px;">
+    <h3 style="font-size:16px;font-weight:700;color:#6C5EA8;margin-bottom:8px;">⚙️ Настройки</h3>
+    <p style="font-size:12px;color:#7A6F9A;margin-bottom:16px;line-height:1.5;">
+      Для проверки бланков через ИИ нужен Anthropic API-ключ.<br>
+      Получите бесплатно на <b>console.anthropic.com</b> → API Keys.<br>
+      Ключ хранится только на вашем устройстве.
+    </p>
+    <label style="font-size:12px;font-weight:600;color:#7A6F9A;display:block;margin-bottom:6px;">API-ключ</label>
+    <input id="apiKeyInput" type="password" placeholder="sk-ant-..." 
+      style="width:100%;border:1.5px solid #DDD8EF;border-radius:10px;padding:10px 12px;font-size:13px;font-family:Inter,sans-serif;outline:none;margin-bottom:16px;">
+    <div style="display:flex;gap:10px;">
+      <button onclick="saveSettings()" style="flex:1;background:#6C5EA8;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Сохранить</button>
+      <button onclick="closeSettings()" style="flex:1;background:#EDE9F7;color:#6C5EA8;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;">Отмена</button>
+    </div>
+    <div id="settingsSaved" style="display:none;text-align:center;color:#2E9E6B;font-size:13px;font-weight:600;margin-top:12px;">✓ Ключ сохранён!</div>
+  </div>
+</div>
 </div>
 
 <!-- Tabs -->
@@ -598,9 +619,14 @@ ${ALL_ITEMS.map(a=>`id="${a.id}": ${a.name}${a.need?' (нужны: '+a.need.join
 Ответь ТОЛЬКО JSON без markdown:
 {"identified":["id1"],"items":{"id1":{"found":true,"missing":[],"note":"комментарий"}},"summary":"вывод на русском"}`;
 
+    const apiKey=localStorage.getItem('anthropic_key')||'';
+    if(!apiKey){
+      body.innerHTML=`<div class="ai-note" style="color:var(--danger)">⚠️ Укажите API-ключ в настройках (кнопка ⚙️ вверху)</div>`;
+      return;
+    }
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
         model:'claude-sonnet-4-6',
         max_tokens:1000,
@@ -676,6 +702,22 @@ if(isIOS()&&!isStandalone()&&!localStorage.getItem('banner_closed')){
 function closeBanner(){
   document.getElementById('installBanner').classList.remove('show');
   localStorage.setItem('banner_closed','1');
+}
+
+// --- Settings ---
+function openSettings(){
+  const modal=document.getElementById('settingsModal');
+  document.getElementById('apiKeyInput').value=localStorage.getItem('anthropic_key')||'';
+  document.getElementById('settingsSaved').style.display='none';
+  modal.style.display='block';
+}
+function closeSettings(){document.getElementById('settingsModal').style.display='none';}
+function saveSettings(){
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if(key) localStorage.setItem('anthropic_key',key);
+  else localStorage.removeItem('anthropic_key');
+  document.getElementById('settingsSaved').style.display='block';
+  setTimeout(closeSettings,1200);
 }
 
 // --- Service Worker ---
